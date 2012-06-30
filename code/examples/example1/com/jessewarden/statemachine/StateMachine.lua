@@ -90,7 +90,7 @@ function StateMachine:new(entity)
 			end
 			
 			local outEvent = {name = "onTransitionComplete", target = self, toState = stateName}
-			self:dispatchEvent(outEvent)
+			Runtime:dispatchEvent(outEvent)
 		end
 	end
 	
@@ -195,7 +195,7 @@ function StateMachine:new(entity)
 	function stateMachine:setState(value)
 		self.previousState = self.state
 		self.state = value
-		self:dispatchEvent({name="onStateMachineStateChanged", target=self})
+		Runtime:dispatchEvent({name="onStateMachineStateChanged", target=self})
 	end
 	
 	function stateMachine:changeState(stateTo)
@@ -218,7 +218,7 @@ function StateMachine:new(entity)
 								fromState = state,
 								toState = stateTo,
 								allowedStates = states[stateTo].from}
-			self:dispatchEvent(outEvent)
+			Runtime:dispatchEvent(outEvent)
 			return false
 		end
 		--print("before find path")
@@ -294,7 +294,7 @@ function StateMachine:new(entity)
 							target = self,
 							fromState = oldState,
 							toState = stateTo}
-		self:dispatchEvent(outEvent)
+		Runtime:dispatchEvent(outEvent)
 		return true
 	end
 	
