@@ -19,6 +19,8 @@ require "WarBot"
 require "Button"
 require "ButtonsController"
 require "TopHud"
+require "physics"
+require "Wall"
 
 function showProps(o)
 	print("-- showProps --")
@@ -30,14 +32,29 @@ function showProps(o)
 end
 
 function startGame()
+	physics.setDrawMode("normal")
+	physics.start()
+	physics.setGravity(0, 9.8)
+	physics.setPositionIterations(10)
+
 	gameLoop = GameLoop:new()
 	gameLoop:start()
+	
+	stage = display.getCurrentStage()
+
+	backgroundRect = display.newRect(0, 0, stage.width, stage.height)
+	backgroundRect:setFillColor(40, 40, 40)
 
 	warBot = WarBot:new()
 	warBot.x = 100
 	warBot.y = 100
+	gameLoop:addLoop(warBot)
 
-	stage = display.getCurrentStage()
+	
+
+	leftWall = Wall:new(-58, 0, 60, 500)
+	rightWall = Wall:new(stage.width - 2, 0, 60, 500)
+	floor = Wall:new(0, stage.height - 40, 700, 60)
 
 	buttons = ButtonsController:new()
 	buttons:init()
@@ -65,7 +82,8 @@ function startGame()
 	topHud = TopHud:new()
 	topHud:setWarBot(warBot)
 	topHud.x = 4
-	topHud.y = 40
+	topHud.y = 30
+
 end
 
 function onEnterScout()
@@ -76,19 +94,23 @@ end
 function onEnterScoutLeft()
 	warBot:showSprite("scoutLeft")
 	warBot:setDirection("left")
+	warBot:startMoving()
 end
 
 function onExitScoutLeft()
 	warBot:showSprite("scout")
+	warBot:stopMoving()
 end
 
 function onEnterScoutRight()
 	warBot:showSprite("scoutRight")
 	warBot:setDirection("right")
+	warBot:startMoving()
 end
 
 function onExitScoutRight()
 	warBot:showSprite("scout")
+	warBot:stopMoving()
 end
 
 function onEnterDefendState()
@@ -108,30 +130,33 @@ end
 
 function onEnterAssaultLeft()
 	warBot:setDirection("left")
-	-- TODO: roll left
+	warBot:setDirection("left")
+	warBot:startMoving()
 end
 
-function onExitAssfaultLeft()
-	-- TODO: stop roll left
+function onExitAssaultLeft()
+	warBot:stopMoving()
 end
 
 function onEnterAssaultRight()
 	warBot:setDirection("right")
-	-- TODO: roll right
+	warBot:startMoving()
 end
 
 function onExitAssaultRight()
-	-- TODO: stop roll right
+	warBot:stopMoving()
 end
 
 function onEnterSightState()
 	warBot:showSprite("sight")
 	warBot:setSpeed(0)
+	warBot:startTrackingSight()
 end
 
 function onExitSightState()
 	warBot:showSprite("sightReverse")
 	warBot:setSpeed(8)
+	warBot:stopTrackingSight()
 end
 
 function onEnterSniperState()

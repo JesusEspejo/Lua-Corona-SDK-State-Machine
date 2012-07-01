@@ -51,9 +51,14 @@ function WarBot:new()
 	bot.defense = 4 -- set externally via StateMachine
 	bot.maxDefense = 10
 	bot.direction = "right"
+	bot.sightSpeed = 0.4
+	bot.sightX = nil
+	bot.sightY = nil
+	bot.currentSightX = nil
+	bot.currentSightY = nil
 	
-	local bg = display.newRect(0, 0, 64, 64)
-	bg:setFillColor(255, 0, 0, 50)
+	local bg = display.newRect(20, 0, 20, 0)
+	bg:setFillColor(255, 0, 0, 255)
 	bg:setReferencePoint(display.TopLeftReferencePoint)
 	bot:insert(bg)
 
@@ -206,7 +211,137 @@ function WarBot:new()
 		self:dispatchEvent({name="onDefenseChanged", target=self, oldValue=oldValue, value=value, max=self.defenseMax})
 	end
 
+	function bot:tick(time)
+
+	end
+
+	function bot:startTrackingSight()
+		Runtime:addEventListener("touch", self)
+		self.oldTick = self.tick
+		self.tick = self.sightTick
+		self.currentSightX = self.x + 30
+		self.currentSightY = self.y - 10
+		self.sightX = self.x
+		self.sightY = self.y
+	end
+
+	function bot:touch(event)
+		self.sightX = event.x
+		self.sightY = event.y
+		return true
+	end
+
+	function bot:stopTrackingSight()
+		Runtime:removeEventListener("touch", self)
+		self.tick = self.oldTick
+		self:destroySight()
+	end
+
+	function bot:sightTick(time)
+		if self.currentSightX == nil or self.sightX == nil then return true end
+		if self.currentSightY == nil or self.sightY == nil then return true end
+		--print("self.currentSightX: ", self.currentSightX, ", self.sightX: ", self.sightX)
+		local deltaX = self.currentSightX - self.sightX
+		local deltaY = self.currentSightY - self.sightY
+		local dist = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
+		-- HACK: too tired to rmemeber why it divides by zero and dist == 0... anyway
+		if dist == 0 then
+			self.currentSightX = self.sightX
+			self.currentSightY = self.sightY
+			self:redrawSight()
+			return true
+		end
+		
+		local moveX = self.sightSpeed * (deltaX / dist) * time
+		local moveY = self.sightSpeed * (deltaY / dist) * time
+		--print("s: ", self.sightSpeed, ", deltaX: ", deltaX, ", dist: ", dist, ", moveX: ", moveX)
+		if (math.abs(moveX) > dist or math.abs(moveY) > dist) then
+			self.currentSightX = self.sightX
+			self.currentSightY = self.sightY
+		else
+			self.currentSightX = self.currentSightX - moveX
+			self.currentSightY = self.currentSightY - moveY
+		end
+		
+		self:redrawSight()
+	end
+
+	function bot:redrawSight()
+		bot:destroySight()
+		self.laserSight = display.newLine(self.x + 30, self.y - 10, self.currentSightX, self.currentSightY)
+		self.laserSight:setColor(0, 255, 0, 180)
+		self.laserSight.width = 2
+	end
+
+	function bot:destroySight()
+		if self.laserSight then
+			self.laserSight:removeSelf()
+			self.laserSight = nil
+		end
+	end
+
+	function bot:getJoint(obj1, obj2, x, y)
+		local joint = physics.newJoint("pivot", obj1, obj2, x, y)
+		--local joint = physics.newJoint("wheel", obj1, obj2, x, y, 2, 2)
+		joint.maxMotorTorque = 1000000
+		--joint.maxMotorForce = torque
+		joint.motorSpeed = 0
+		return joint
+	end
+
+	function bot:getWheel()
+		local radius = 10
+		local wheelShape = display.newCircle(0, 0, radius)
+		--self:insert(wheelShape)
+		wheelShape:setFillColor(0, 255, 0, 0)
+		physics.addBody(wheelShape, "dynamic", 
+			{ density=0.3, friction=0.7, bounce=0.2, isBullet=true, radius=radius})
+		return wheelShape
+	end
+
+	function bot:startMoving()
+		local direction = self.direction
+		local wheelJoint = self.wheelJoint
+		if direction == "right" then
+			wheelJoint.motorSpeed = self.speed * 10000
+		elseif direction == "left" then
+			wheelJoint.motorSpeed = -(self.speed * 10000)
+		end
+	end
+
+	function bot:stopMoving()
+		self.wheelJoint.motorSpeed = 0
+		if self.speed <= 0 then return true end
+
+		local force
+		if self.direction == "right" then
+			force = -self.speed
+		else
+			force = self.speed
+		end
+		force = force * 2
+		self:applyLinearImpulse(force, 0, 40, 32)
+	end
+
+
 	bot:showSprite("scout")
+
+	local botShape = {10,0, 52,0, 52,64, 10,64}
+	physics.addBody(bot, "dynamic", 
+			{ density=1, friction=0.4, bounce=0.2, isBullet=true, shape=botShape})
+	bot.isFixedRotation = true
+
+	
+
+	local wheel1 = bot:getWheel()
+	wheel1.x = bot.x + 32
+	wheel1.y = bot.y + 60
+
+	local cX, cY = bot:localToContent(bot.x + 32, bot.y + 60)
+	local wheelJoint = bot:getJoint(bot, wheel1, wheel1.x, wheel1.y)
+	--local joint2 = bot:getJoint(bot, wheel2, 60, 0)
+	bot.wheelJoint = wheelJoint
+
 
 	return bot
 
