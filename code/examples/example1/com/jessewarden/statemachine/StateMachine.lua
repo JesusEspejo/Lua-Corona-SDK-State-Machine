@@ -8,7 +8,10 @@ function StateMachine:new(entity)
 	
 	--print("StateMachine::new, entity.classType: ", entity.classType)
 	
-	local stateMachine = {}
+	-- option: If you want to just use self to dispatch events,
+	-- have stateMachine extend a table instead.
+	--local stateMachine = {}
+	local stateMachine = display.newGroup()
 	stateMachine.states = {}
 	stateMachine.id = nil
 	stateMachine.state = nil
@@ -90,7 +93,7 @@ function StateMachine:new(entity)
 			end
 			
 			local outEvent = {name = "onTransitionComplete", target = self, toState = stateName}
-			Runtime:dispatchEvent(outEvent)
+			self:dispatchEvent(outEvent)
 		end
 	end
 	
@@ -156,10 +159,7 @@ function StateMachine:new(entity)
 		local fromState = states[stateFrom]
 		local c = 0
 		local d = 0
-		local stackOverflowCounter = 0
 		while fromState do
-			stackOverflowCounter = stackOverflowCounter + 1
-			if stackOverflowCounter > 255 then error("Stack Overflow in findPath.") end
 			d = 0
 			local toState = states[stateTo]
 			--print("\ttoState: ", toState, ", name: ", toState.name)
@@ -195,7 +195,7 @@ function StateMachine:new(entity)
 	function stateMachine:setState(value)
 		self.previousState = self.state
 		self.state = value
-		Runtime:dispatchEvent({name="onStateMachineStateChanged", target=self})
+		self:dispatchEvent({name="onStateMachineStateChanged", target=self})
 	end
 	
 	function stateMachine:changeState(stateTo)
@@ -218,7 +218,7 @@ function StateMachine:new(entity)
 								fromState = state,
 								toState = stateTo,
 								allowedStates = states[stateTo].from}
-			Runtime:dispatchEvent(outEvent)
+			self:dispatchEvent(outEvent)
 			return false
 		end
 		--print("before find path")
@@ -294,7 +294,7 @@ function StateMachine:new(entity)
 							target = self,
 							fromState = oldState,
 							toState = stateTo}
-		Runtime:dispatchEvent(outEvent)
+		self:dispatchEvent(outEvent)
 		return true
 	end
 	

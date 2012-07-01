@@ -1,3 +1,19 @@
+--[[
+
+	StateMachine Example 1
+
+	The following example is an airplane that you can move & shoot by touching the screen.
+	The state machine handles the 3 firing modes. You can go to any firing state from
+	any other firing state. I've shown you 2 ways to use the basic StateMachine.
+
+	Option 1: You can define your states and listen for the change event to take action.
+
+	Option 2: You can define enter handlers to have only the code that matters for initializing
+	that state inside of a single function. The advantage here is if you have a lot of states,
+	you avoid the long if/then statements for Option 1.
+
+]]--
+
 require "sprite"
 require "GameLoop"
 require "com.jessewarden.statemachine.StateMachine"
@@ -18,7 +34,7 @@ function startGame()
 		fireFSM:addState("fire1", {from="*"})
 		fireFSM:addState("fire2", {from="*"})
 		fireFSM:addState("fire3", {from="*"})
-		Runtime:addEventListener("onStateMachineStateChanged", onChangePlayerFireFunction)
+		fireFSM:addEventListener("onStateMachineStateChanged", onChangePlayerFireFunction)
 	else
 		-- option2: Use the enter handler to react when you enter each state
 		fireFSM:addState("fire1", {from="*", enter=onEnterFire1})
@@ -37,7 +53,7 @@ function startGame()
 	fire3Button = getButton("Fire 3", function() fireFSM:changeState("fire3") end)
 
 	fire1Button.x = 4
-	fire1Button.y = 4
+	fire1Button.y = 40
 
 	fire2Button.x = fire1Button.x
 	fire2Button.y = fire1Button.y + fire1Button.height + 2
@@ -245,7 +261,9 @@ function getButton(label, callback)
 	group:insert(field)
 
 	function group:touch(event)
-		self.callback({name="touch", target=self})
+		if event.phase == "began" then
+			self.callback({name="touch", target=self})
+		end
 		return true
 	end
 
