@@ -15,23 +15,34 @@ function ButtonsController:new()
 		local walkRightButton = Button:new("Right", function(e)self:onMoveRight(e)end, walkLeftButton.x + walkLeftButton.width + 4, walkLeftButton.y, buttonWidth, buttonHeight)
 		local defendButton = Button:new("Defend", function(e)self:onDefend(e)end, walkRightButton.x + walkRightButton.width + 4, walkRightButton.y, buttonWidth, buttonHeight)
 		local attackButton = Button:new("Attack", function(e)self:onAssault(e)end, defendButton.x + defendButton.width + 4, defendButton.y, buttonWidth, buttonHeight)
-		
 		local scoutButton = Button:new("Scout", function(e)self:onScout(e)end, 4, walkLeftButton.y - walkLeftButton.height - 4, buttonWidth, buttonHeight)
-
-
+		local rollLeftButton = Button:new("Left", function(e)self:onRollLeft(e)end, walkLeftButton.x, walkLeftButton.y, buttonWidth, buttonHeight)
+		local rollRightButton = Button:new("Right", function(e)self:onRollRight(e)end, walkRightButton.x, walkRightButton.y, buttonWidth, buttonHeight)
+		local sightButton = Button:new("Sight", function(e)self:onSight(e)end, attackButton.x, attackButton.y - buttonHeight, buttonWidth, buttonHeight)
+		local sniperButton = Button:new("Sniper", function(e)self:onSniper(e)end, sightButton.x + buttonWidth + 4, sightButton.y, buttonWidth, buttonHeight)
+		local artilleryButton = Button:new("Artillery", function(e)self:onArtillery(e)end, sniperButton.x + buttonWidth + 4, sniperButton.y, buttonWidth, buttonHeight)
+		
 		self:insert(walkLeftButton)
 		self:insert(walkRightButton)
 		self:insert(defendButton)
 		self:insert(attackButton)
-
 		self:insert(scoutButton)
+		self:insert(rollLeftButton)
+		self:insert(rollRightButton)
+		self:insert(sightButton)
+		self:insert(sniperButton)
+		self:insert(artilleryButton)
 
 		self.walkLeftButton = walkLeftButton
 		self.walkRightButton = walkRightButton
 		self.defendButton = defendButton
 		self.attackButton = attackButton
-
 		self.scoutButton = scoutButton
+		self.rollLeftButton = rollLeftButton
+		self.rollRightButton = rollRightButton
+		self.sightButton = sightButton
+		self.sniperButton = sniperButton
+		self.artilleryButton = artilleryButton
 	end
 
 	function buttons:setStateMachine(fsm)
@@ -51,6 +62,11 @@ function ButtonsController:new()
 		self.defendButton.isVisible = false
 		self.attackButton.isVisible = false
 		self.scoutButton.isVisible = false
+		self.rollLeftButton.isVisible = false
+		self.rollRightButton.isVisible = false
+		self.sightButton.isVisible = false
+		self.sniperButton.isVisible = false
+		self.artilleryButton.isVisible = false
 	end
 
 	function buttons:onStateMachineStateChanged(event)
@@ -65,49 +81,37 @@ function ButtonsController:new()
 		elseif state == "defend" then
 			self.defendButton.isVisible = true
 		elseif state == "assault" then
-			self.walkLeftButton.isVisible = true
-			self.walkRightButton.isVisible = true
+			self.rollLeftButton.isVisible = true
+			self.rollRightButton.isVisible = true
 			self.defendButton.isVisible = true
 			self.scoutButton.isVisible = true
+			self.sightButton.isVisible = true
+			self.sniperButton.isVisible = true
+			self.artilleryButton.isVisible = true
 		elseif state == "assaultLeft" or state == "assaultRight" then
-			self.walkLeftButton.isVisible = true
-			self.walkRightButton.isVisible = true
+			self.rollLeftButton.isVisible = true
+			self.rollRightButton.isVisible = true
 			self.scoutButton.isVisible = true
+		elseif state == "sight" or state == "sniper" or state == "artillery" then
+			self.attackButton.isVisible = true
 		end
+
 
 	end
 
 	function buttons:onMoveLeft(event)
-		local sm = self.stateMachine
 		if event.phase == "began" then
-			if sm.state == "assault" then
-				sm:changeState("assaultLeft") 
-			else
-				sm:changeState("scoutLeft")
-			end
+			self.stateMachine:changeState("scoutLeft") 
 		elseif event.phase == "ended" or event.phase == "cancelled" then
-			if sm.state == "assaultLeft" then
-				sm:changeState("assault")
-			else
-				sm:changeState("scout")
-			end
+			self.stateMachine:changeState("scout") 
 		end
 	end
 
 	function buttons:onMoveRight(event)
-		local sm = self.stateMachine
 		if event.phase == "began" then
-			if sm.state == "assault" then
-				sm:changeState("assaultRight") 
-			else
-				sm:changeState("scoutRight")
-			end
+			self.stateMachine:changeState("scoutRight") 
 		elseif event.phase == "ended" or event.phase == "cancelled" then
-			if sm.state == "assaultRight" then
-				sm:changeState("assault")
-			else
-				sm:changeState("scout")
-			end
+			self.stateMachine:changeState("scout") 
 		end
 	end
 
@@ -120,7 +124,7 @@ function ButtonsController:new()
 	end
 
 	function buttons:onAssault(event)
-		if event.phase == "began" then
+		if event.phase == "ended" then
 			self.stateMachine:changeState("assault")
 		end
 	end
@@ -131,6 +135,39 @@ function ButtonsController:new()
 		end
 	end
 
+	function buttons:onRollLeft(event)
+		if event.phase == "began" then
+			self.stateMachine:changeState("assaultLeft") 
+		elseif event.phase == "ended" or event.phase == "cancelled" then
+			self.stateMachine:changeState("assault") 
+		end
+	end
+
+	function buttons:onRollRight(event)
+		if event.phase == "began" then
+			self.stateMachine:changeState("assaultRight") 
+		elseif event.phase == "ended" or event.phase == "cancelled" then
+			self.stateMachine:changeState("assault") 
+		end
+	end
+
+	function buttons:onSight(event)
+		if event.phase == "ended" then
+			self.stateMachine:changeState("sight")
+		end
+	end
+
+	function buttons:onSniper(event)
+		if event.phase == "ended" then
+			self.stateMachine:changeState("sniper")
+		end
+	end
+
+	function buttons:onArtillery(event)
+		if event.phase == "ended" then
+			self.stateMachine:changeState("artillery")
+		end
+	end
 
 
 	return buttons

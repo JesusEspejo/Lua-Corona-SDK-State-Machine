@@ -10,6 +10,7 @@ function WarBot:new()
 		local artillerySheet = sprite.newSpriteSheet("artillery-sheet.png", 84, 84)
 		local artillerySet = sprite.newSpriteSet(artillerySheet, 1, 17)
 		sprite.add(artillerySet, "artillery", 1, 17, 1000, 1)
+		sprite.add(artillerySet, "artilleryReverse", 1, 17, 500, -1)
 
 		local defendSheet = sprite.newSpriteSheet("defend-sheet.png", 64, 64)
 		local defendSet = sprite.newSpriteSet(defendSheet, 1, 1)
@@ -18,10 +19,12 @@ function WarBot:new()
 		local sightSheet = sprite.newSpriteSheet("sight-sheet.png", 64, 64)
 		local sightSet = sprite.newSpriteSet(sightSheet, 1, 5)
 		sprite.add(sightSet, "sight", 1, 5, 500, 1)
+		sprite.add(sightSet, "sightReverse", 1, 5, 300, -1)
 
 		local sniperSheet = sprite.newSpriteSheet("sniper-sheet.png", 128, 128)
 		local sniperSet = sprite.newSpriteSet(sniperSheet, 1, 21)
-		sprite.add(sniperSet, "sniper", 1, 21, 2000, 0)
+		sprite.add(sniperSet, "sniper", 1, 21, 1000, 1)
+		sprite.add(sniperSet, "sniperReverse", 1, 21, 500, -1)
 
 		WarBot.scoutSheet = scoutSheet
 		WarBot.scoutSet = scoutSet
@@ -44,7 +47,10 @@ function WarBot:new()
 	bot.HEIGHT = 64
 	bot.image = nil
 	bot.speed = 6 -- set externally via StateMachine
+	bot.maxSpeed = 10
 	bot.defense = 4 -- set externally via StateMachine
+	bot.maxDefense = 10
+	bot.direction = "right"
 	
 	local bg = display.newRect(0, 0, 64, 64)
 	bg:setFillColor(255, 0, 0, 50)
@@ -65,24 +71,35 @@ function WarBot:new()
 	bot.wheel2 = wheel2
 	bot.wheel3 = wheel3
 
-	function bot:showSprite(anime, direction)
-		if self.image then 
-			self.image:removeSelf()
+	-- holds srpites and flips for direction changing
+	bot.spriteHolder = display.newGroup()
+	bot:insert(bot.spriteHolder)
+
+	function bot:showSprite(anime)
+		if self.spriteHolder and self.spriteHolder.image then
+			self.spriteHolder.image:removeSelf()
+			self.spriteHolder.image = nil
 		end
+
 		local image
 		local showTheWheels = false
-		if anime == "scout" and direction == nil then
+		if anime == "scout" then
 			image = display.newImage("stand.png")
 		elseif anime == "assault" then
 			image = display.newImage("assault.png")
 			showTheWheels = true
-		elseif anime == "scout" then
+		elseif anime == "scoutLeft" or anime == "scoutRight" then
 			image = sprite.newSprite(WarBot.scoutSet)
 			image:prepare("scout")
 			image:play()
 		elseif anime == "artillery" then
 			image = sprite.newSprite(WarBot.artillerySet)
 			image:prepare("artillery")
+			image:play()
+		elseif anime == "artilleryReverse" then
+			image = sprite.newSprite(WarBot.artillerySet)
+			image:prepare("artilleryReverse")
+			image.currentFrame = 16
 			image:play()
 		elseif anime == "defend" then
 			image = sprite.newSprite(WarBot.defendSet)
@@ -93,48 +110,64 @@ function WarBot:new()
 			image:prepare("sight")
 			image:play()
 			showTheWheels = true
+		elseif anime == "sightReverse" then
+			image = sprite.newSprite(WarBot.sightSet)
+			image:prepare("sightReverse")
+			image.currentFrame = 4
+			image:play()
+			showTheWheels = true
 		elseif anime == "sniper" then
 			image = sprite.newSprite(WarBot.sniperSet)
 			image:prepare("sniper")
+			image:play()
+		elseif anime == "sniperReverse" then
+			image = sprite.newSprite(WarBot.sniperSet)
+			image:prepare("sniperReverse")
+			image.currentFrame = 20
 			image:play()
 		end
 
 		if image == nil then error("failed to find an animation for: " .. anime) end
 		image:setReferencePoint(display.TopLeftReferencePoint)
-		self:insert(image)
-		self.image = image
+		self.spriteHolder:insert(image)
+		self.spriteHolder.image = image
 		self:showWheels(showTheWheels)
 
 		-- now that we're inserted, it's easier to position things... these are the days when I miss Flash
-		if anime == "scout" and direction == nil then
-			image.x = self.WIDTH / 2 - image.width / 2
-			image.y = 0
+		if anime == "scout" or anime == "scoutRight" or anime == "scoutLeft" then
+			image.x = (self.WIDTH / 2) - (image.width / 2)
+			image.y = (self.HEIGHT / 2) - (image.height / 2)
 		elseif anime == "assault" then
 			image.x = self.WIDTH / 2 - image.width / 2
 			image.y = 0
-		elseif anime == "scout" then
+		elseif anime == "artillery" or anime == "artilleryReverse" then
 			image.x = self.WIDTH / 2 - image.width / 2
-			image.y = 0
-		elseif anime == "artillery" then
-			image.x = self.WIDTH / 2 - image.width / 2
-			image.y = 0
+			image.y = 2
 		elseif anime == "defend" then
 			image.x = 0
 			image.y = 0
-		elseif anime == "sight" then
+		elseif anime == "sight" or anime == "sightReverse" then
 			image.x = self.WIDTH / 2 - image.width / 2
-			image.y = 0
-		elseif anime == "sniper" then
+			image.y = -10
+		elseif anime == "sniper" or anime == "sniperReverse" then
 			image.x = self.WIDTH / 2 - image.width / 2
-			image.y = 0
+			image.y = -40
 		end
-		-- TODO: handle above x transformations by putting in sub-group
-		if direction == "left" then
-			image.xScale = -1
-			image.x = image.width
-		elseif direction == "right" or direction == nil then
-			image.xScale = 1
-			image.x = 0
+
+		self:setDirection(self.direction)
+	end
+
+	function bot:setDirection(direction)
+		self.direction = direction
+		local spriteHolder = self.spriteHolder
+		if spriteHolder then
+			if direction == "left" then
+				spriteHolder.xScale = -1
+				spriteHolder.x = self.WIDTH
+			elseif direction == "right" or direction == nil then
+				spriteHolder.xScale = 1
+				spriteHolder.x = 0
+			end
 		end
 	end
 
@@ -162,7 +195,7 @@ function WarBot:new()
 		assert(type(value) == "number", "value must be a number.")
 		local oldValue = self.speed
 		self.speed = value
-		self:dispatchEvent({name="onSpeedChanged", target=self, oldValue=oldValue, value=value})
+		self:dispatchEvent({name="onSpeedChanged", target=self, oldValue=oldValue, value=value, max=self.speedMax})
 	end
 
 	function bot:setDefense(value)
@@ -170,7 +203,7 @@ function WarBot:new()
 		assert(type(value) == "number", "value must be a number.")
 		local oldValue = self.defense
 		self.defense = value
-		self:dispatchEvent({name="onDefenseChanged", target=self, oldValue=oldValue, value=value})
+		self:dispatchEvent({name="onDefenseChanged", target=self, oldValue=oldValue, value=value, max=self.defenseMax})
 	end
 
 	bot:showSprite("scout")

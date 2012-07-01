@@ -18,6 +18,7 @@ require "com.jessewarden.statemachine.StateMachine"
 require "WarBot"
 require "Button"
 require "ButtonsController"
+require "TopHud"
 
 function showProps(o)
 	print("-- showProps --")
@@ -60,15 +61,21 @@ function startGame()
 	botFSM:setInitialState("scout")
 
 	buttons:setStateMachine(botFSM)
+
+	topHud = TopHud:new()
+	topHud:setWarBot(warBot)
+	topHud.x = 4
+	topHud.y = 40
 end
 
 function onEnterScout()
 	warBot:showSprite("scout")
-	warBot:setSpeed(6)
+	warBot:setSpeed(4)
 end
 
 function onEnterScoutLeft()
-	warBot:showSprite("scout", "left")
+	warBot:showSprite("scoutLeft")
+	warBot:setDirection("left")
 end
 
 function onExitScoutLeft()
@@ -76,7 +83,8 @@ function onExitScoutLeft()
 end
 
 function onEnterScoutRight()
-	warBot:showSprite("scout", "right")
+	warBot:showSprite("scoutRight")
+	warBot:setDirection("right")
 end
 
 function onExitScoutRight()
@@ -86,18 +94,20 @@ end
 function onEnterDefendState()
 	warBot:showSprite("defend")
 	warBot:setDefense(10)
+	warBot:setSpeed(0)
 end
 
 function onExitDefendState()
-	warBot:setDefense(4)
+	warBot:setDefense(1)
 end
 
 function onEnterAssaultState()
 	warBot:showSprite("assault")
+	warBot:setSpeed(8)
 end
 
 function onEnterAssaultLeft()
-	warBot:showSprite("assault", "left")
+	warBot:setDirection("left")
 	-- TODO: roll left
 end
 
@@ -106,12 +116,42 @@ function onExitAssfaultLeft()
 end
 
 function onEnterAssaultRight()
-	warBot:showSprite("assault", "right")
+	warBot:setDirection("right")
 	-- TODO: roll right
 end
 
 function onExitAssaultRight()
 	-- TODO: stop roll right
+end
+
+function onEnterSightState()
+	warBot:showSprite("sight")
+	warBot:setSpeed(0)
+end
+
+function onExitSightState()
+	warBot:showSprite("sightReverse")
+	warBot:setSpeed(8)
+end
+
+function onEnterSniperState()
+	warBot:showSprite("sniper")
+	warBot:setSpeed(0)
+end
+
+function onExitSniperState()
+	warBot:showSprite("sniperReverse")
+	warBot:setSpeed(8)
+end
+
+function onEnterArtilleryState()
+	warBot:showSprite("artillery")
+	warBot:setSpeed(0)
+end
+
+function onExitArtilleryState()
+	warBot:showSprite("artilleryReverse")
+	warBot:setSpeed(8)
 end
 
 
