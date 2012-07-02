@@ -48,6 +48,7 @@ function startGame()
 	warBot = WarBot:new()
 	warBot.x = 100
 	warBot.y = 100
+	warBot:addEventListener("onMegaBoom", onMegaBoom)
 	gameLoop:addLoop(warBot)
 
 	
@@ -183,5 +184,43 @@ function onExitArtilleryState()
 	warBot:stopArtillery()
 end
 
+function onMegaBoom()
+	if shakeList and shakeList.timerHandle then
+		timer.cancel(shakeList.timerHandle)
+		shakeList.timerHandler = nil
+		shakeList.points = nil
+		shakeList = nil
+	end
+	shakeList = {}
+	shakeList.points = {}
+	local startX = 0
+	local startY = 0
+	local i, j
+	local points = shakeList.points
+	for i=4,1,-1 do
+		for j=2,1,-1 do
+			table.insert(points, {0, i})
+			table.insert(points, {i, 0})
+			table.insert(points, {0, -i})
+			table.insert(points, {-i, 0})
+		end
+	end
+	function shakeList:timer(event)
+		if points[shakeList.counter] == nil then
+			-- we're done here
+			stage.x = 0
+			stage.y = 0
+			timer.cancel(shakeList.timerHandle)
+			shakeList.timerHandle = nil
+		end
+
+		local point = points[shakeList.counter]
+		stage.x = stage.x + point[1]
+		stage.y = stage.y + point[2]
+		shakeList.counter = shakeList.counter + 1
+	end
+	shakeList.counter = 1
+	shakeList.timerHandler = timer.performWithDelay(25, shakeList, #points)
+end
 
 startGame()

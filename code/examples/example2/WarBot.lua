@@ -110,6 +110,13 @@ function WarBot:new()
 			image:play()
 		elseif anime == "artilleryReverse" then
 			image = sprite.newSprite(WarBot.artillerySet)
+			function image:sprite(event)
+				if event.phase == "end" then
+					self:removeEventListener("sprite", self)
+					bot:showSprite("assault")
+				end
+			end
+			image:addEventListener("sprite", image)
 			image:prepare("artilleryReverse")
 			image.currentFrame = 16
 			image:play()
@@ -298,7 +305,7 @@ function WarBot:new()
 	end
 
 	function bot:stopArtillery()
-		Runtime:removeEventListener("touch", self.sniperTouchDelegate)
+		Runtime:removeEventListener("touch", self.artilleryTouchDelegate)
 	end
 
 	function bot:onArtilleryTouch(event)
@@ -306,15 +313,25 @@ function WarBot:new()
 			local bullet = display.newCircle(self.x + 70, self.y + 27, 10)
 			bullet.hit = false
 			function bullet:collision(event)
-				if self.hit == false then
-					self.hit = true
-					local boom = sprite.newSprite(WarBot.explosionSet)
-					boom:prepare("explosion")
-					boom:play()
-					boom.x = self.x
-					boom.y = self.y
-					self.isVisible = false
-					timer.performWithDelay(100, self, 1)
+				if event.other and event.other.classType == "Wall" then
+					if self.hit == false then
+						self.hit = true
+						local boom = sprite.newSprite(WarBot.explosionSet)
+						function boom:sprite(event)
+							if event.phase == "end" then
+								self:removeEventListener("sprite", self)
+								self:removeSelf()
+							end
+						end
+						boom:addEventListener("sprite", boom)
+						boom:prepare("explosion")
+						boom:play()
+						boom.x = self.x
+						boom.y = self.y
+						self.isVisible = false
+						timer.performWithDelay(100, self, 1)
+						bot:dispatchEvent({name="onMegaBoom", target=self})
+					end
 				end
 			end
 			function bullet:timer(event)
