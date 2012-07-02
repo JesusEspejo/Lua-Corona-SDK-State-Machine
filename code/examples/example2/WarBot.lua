@@ -216,7 +216,10 @@ function WarBot:new()
 	end
 
 	function bot:startTrackingSight()
-		Runtime:addEventListener("touch", self)
+		if self.sightTouchDelegate == nil then
+			self.sightTouchDelegate = function(e)bot:onSightTouch(e)end
+		end
+		Runtime:addEventListener("touch", self.sightTouchDelegate)
 		self.oldTick = self.tick
 		self.tick = self.sightTick
 		self.currentSightX = self.x + 30
@@ -225,14 +228,14 @@ function WarBot:new()
 		self.sightY = self.y
 	end
 
-	function bot:touch(event)
+	function bot:onSightTouch(event)
 		self.sightX = event.x
 		self.sightY = event.y
 		return true
 	end
 
 	function bot:stopTrackingSight()
-		Runtime:removeEventListener("touch", self)
+		Runtime:removeEventListener("touch", self.sightTouchDelegate)
 		self.tick = self.oldTick
 		self:destroySight()
 	end
@@ -278,6 +281,75 @@ function WarBot:new()
 			self.laserSight:removeSelf()
 			self.laserSight = nil
 		end
+	end
+
+	function bot:startSniperShooting()
+		if self.sniperTouchDelegate == nil then
+			self.sniperTouchDelegate = function(e)self:onSniperTouch(e)end
+		end
+		Runtime:addEventListener("touch", self.sniperTouchDelegate)
+	end
+
+	function bot:getBusyTerryChildIGuessIDidntKnow(targetA, targetB)
+		local dx = targetA.x - targetB.x
+		local dy = targetA.y - targetB.y
+		local radians = math.atan2(dy, dx)
+		local deg = math.deg(radians)
+		local theX = math.sin(deg)
+		local theY = math.cos(deg)
+		return theX, theY
+	end
+
+	function bot:onSniperTouch(event)
+		if event.phase == "began" then
+			local bullet = display.newCircle(self.x + 70, self.y + 27, 2)
+			-- TODO: figure this out
+			local theX, theY = self:getBusyTerryChildIGuessIDidntKnow(bullet, event)
+			physics.addBody(bullet, {density=2, friction=0.2, bounce=0.2, isBullet = true})
+			bullet.rot = math.atan2(bullet.y - event.y,  bullet.x - event.y) / math.pi * 180 -90;
+			bullet.angle = (bullet.rot -90) * math.pi / 180;
+			--self.x = self.x + math.cos(self.angle) * self.speed * millisecondsPassed
+	   		--self.y = self.y + math.sin(self.angle) * self.speed * millisecondsPassed
+	   		local targetX = math.cos(bullet.angle)
+	   		local targetY = math.sin(bullet.angle)
+
+	   		-- Charlie's
+	   		local forceX = event.x - bullet.x
+	   		local forceY = event.y - bullet.y
+	   		local dist = math.sqrt((forceX * forceX) + (forceY * forceY))
+	   		--[[
+	   		-- hack to increase/decrease force to maximum
+	   		local max = 160
+	   		local xPer, yPer
+	   		print("before, x: ", forceX, ", y: ", forceY)
+	   		if forceX > max then
+	   			xPer = max / forceX
+	   			forceX = max
+	   			forceY = forceY * xPer
+	   		elseif forceY > max then
+	   			yPer = max / forceY
+	   			forceY = max
+	   			forceX = forceX * yPer
+	   		elseif forceX < max then
+	   			xPer = forceX / max
+	   			forceX = max
+	   			forceY = forceY * xPer
+   			elseif forceY < max then
+   				yPer = forceY / max
+   				forceY = max
+   				forceX = forceX * yPer
+   			end
+
+	   		print("after, x: ", forceX, ", y: ", forceY)
+			]]--
+	   		forceX = forceX * 0.007
+	   		forceY = forceY * 0.007
+			bullet:applyLinearImpulse( forceX, forceY, bullet.x + (bullet.width / 2), bullet.y + (bullet.height / 2))
+		end
+	end
+
+	function bot:stopSniperShooting()
+		Runtime:removeEventListener("touch", self.sniperTouchDelegate)
 	end
 
 	function bot:getJoint(obj1, obj2, x, y)

@@ -162,11 +162,13 @@ end
 function onEnterSniperState()
 	warBot:showSprite("sniper")
 	warBot:setSpeed(0)
+	warBot:startSniperShooting()
 end
 
 function onExitSniperState()
 	warBot:showSprite("sniperReverse")
 	warBot:setSpeed(8)
+	warBot:stopSniperShooting()
 end
 
 function onEnterArtilleryState()
