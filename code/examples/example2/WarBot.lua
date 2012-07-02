@@ -26,6 +26,10 @@ function WarBot:new()
 		sprite.add(sniperSet, "sniper", 1, 21, 1000, 1)
 		sprite.add(sniperSet, "sniperReverse", 1, 21, 500, -1)
 
+		local explosionSheet = sprite.newSpriteSheet("explosion-sheet.png", 142, 200)
+		local explosionSet = sprite.newSpriteSet(explosionSheet, 1, 8)
+		sprite.add(explosionSet, "explosion", 1, 8, 800, 1)
+
 		WarBot.scoutSheet = scoutSheet
 		WarBot.scoutSet = scoutSet
 
@@ -40,6 +44,9 @@ function WarBot:new()
 
 		WarBot.sniperSheet = sniperSheet
 		WarBot.sniperSet = sniperSet
+
+		WarBot.explosionSheet = explosionSheet
+		WarBot.explosionSet = explosionSet
 	end
 
 	local bot = display.newGroup()
@@ -280,6 +287,46 @@ function WarBot:new()
 		if self.laserSight then
 			self.laserSight:removeSelf()
 			self.laserSight = nil
+		end
+	end
+
+	function bot:startArtillery()
+		if self.artilleryTouchDelegate == nil then
+			self.artilleryTouchDelegate = function(e)self:onArtilleryTouch(e)end
+		end
+		Runtime:addEventListener("touch", self.artilleryTouchDelegate)
+	end
+
+	function bot:stopArtillery()
+		Runtime:removeEventListener("touch", self.sniperTouchDelegate)
+	end
+
+	function bot:onArtilleryTouch(event)
+		if event.phase == "began" then
+			local bullet = display.newCircle(self.x + 70, self.y + 27, 10)
+			bullet.hit = false
+			function bullet:collision(event)
+				if self.hit == false then
+					self.hit = true
+					local boom = sprite.newSprite(WarBot.explosionSet)
+					boom:prepare("explosion")
+					boom:play()
+					boom.x = self.x
+					boom.y = self.y
+					self.isVisible = false
+					timer.performWithDelay(100, self, 1)
+				end
+			end
+			function bullet:timer(event)
+				self:removeSelf()
+			end
+			bullet:addEventListener("collision", bullet)
+			physics.addBody(bullet, {density=3, friction=0.4, bounce=0.2, isBullet = true})
+			local forceX = event.x - bullet.x
+	   		local forceY = event.y - bullet.y
+			forceX = forceX * 0.05
+	   		forceY = forceY * 0.05
+			bullet:applyLinearImpulse( forceX, forceY, bullet.x + (bullet.width / 2), bullet.y + (bullet.height / 2))
 		end
 	end
 

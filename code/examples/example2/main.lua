@@ -174,11 +174,13 @@ end
 function onEnterArtilleryState()
 	warBot:showSprite("artillery")
 	warBot:setSpeed(0)
+	warBot:startArtillery()
 end
 
 function onExitArtilleryState()
 	warBot:showSprite("artilleryReverse")
 	warBot:setSpeed(8)
+	warBot:stopArtillery()
 end
 
 
