@@ -252,6 +252,7 @@ function StateMachine:new(entity)
 					exitCallback.currentState = self.parentState.name
 					self.parentState.exit(exitCallback)
 				end
+				p = p + 1
 			end
 		end
 		
