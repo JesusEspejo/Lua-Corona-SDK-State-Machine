@@ -1,7 +1,10 @@
-ProgressBar = {}
- 
+-- Code from https://github.com/JesterXL/Lua-Corona-SDK-State-Machine/blob/master/code/examples/example2/com/jessewarden/components/ProgressBar.lua
+-- Modified by @JesusEspejo
+-- Adjustment done to keep compatibility with Corona’s Graphics 2.0 
+ProgressBar = {} 
 function ProgressBar:new(backRed, backGreen, backBlue, frontRed, frontGreen, frontBlue, startWidth, startHeight)
 	local group = display.newGroup()
+	local frontBarOriginX = startWidth / 2
 
 	-- 35, 6 are good defaults
 	local backBar = display.newRect(0, 0, startWidth, startHeight)
@@ -11,7 +14,7 @@ function ProgressBar:new(backRed, backGreen, backBlue, frontRed, frontGreen, fro
 	backBar.strokeWidth = 1
  
 	local frontBar = display.newRect(0, 0, startWidth, startHeight)
-	frontBar:setReferencePoint(display.TopLeftReferencePoint)
+	frontBar.x = 0 - frontBarOriginX
 	group:insert(frontBar)
 	frontBar:setFillColor(frontRed, frontGreen, frontBlue)
 	frontBar:setStrokeColor(0, 0, 0)
@@ -27,14 +30,22 @@ function ProgressBar:new(backRed, backGreen, backBlue, frontRed, frontGreen, fro
 		end
 		
 		local percent = current / max
+
+		-- Avoiding current to surpass extension
+		if (percent > 1) then
+			percent = 1
+		end
+
+		-- Applying calculated percentage
 		local desiredWidth = startWidth * percent
 		if percent ~= 0 then
-			frontBar.xScale = percent
+			frontBar.width = desiredWidth
 			frontBar.isVisible = true
 		else
 			frontBar.isVisible = false
 		end
-		frontBar.x = backBar.x + frontBar.xReference
+		-- Relocating frontBar depending on the 
+		frontBar.x = 0 - frontBarOriginX + desiredWidth / 2
 	end
  
 	return group
